@@ -9,18 +9,18 @@ def main():
 
     args = parser.parse_args()
 
-    #print(args.Input)
     print(len(args.Input))
 
     size = 9
     grid = [[[n for n in range(1,10)] for x in range(size)] for u in range(size)]
 
-    #
+    #put input arguments into grid to initialize starting values
     for ((x,y),n) in zip(product(range(size), repeat=2), range(size**2)):
         if args.Input[n] != 0:
             grid[x][y] = [args.Input[n]]
         print(grid[x][y])
 
+    
 
 if __name__ == '__main__':
     main()
