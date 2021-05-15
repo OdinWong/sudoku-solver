@@ -37,7 +37,7 @@ class Sudoku():
             pass
 
         #check square
-        ##first caculate the starting index of the subsquare that (x,y) is in
+        ##first calculate the starting index of the subsquare that (x,y) is in
         ##and then iterate over the whole square
         xStart = (x//self.subSidelength)*self.subSidelength
         yStart = (y//self.subSidelength)*self.subSidelength
