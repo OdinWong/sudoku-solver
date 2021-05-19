@@ -14,10 +14,10 @@ class Sudoku():
         #put input arguments into grid to initialize starting values,
         #only takes size^2 values from the inital state list provided
         #TODO check size/initialState is a valid size
-        for ((x,y),n) in zip(product(range(self.size), repeat=2), range(self.size**2)):
+        for ((y,x),n) in zip(product(range(self.size), repeat=2), range(self.size**2)):
             if initialState[n] != 0:
                 self.grid[x][y] = [initialState[n]]
-            print(self.grid[x][y])
+            #print('('+str(x)+','+str(y)+') :' + str(self.grid[x][y]))
 
         #each square contains 'size' number of cells, 
         # there are 'size' number of squares in the whole puzzle
@@ -28,10 +28,19 @@ class Sudoku():
         pass
 
     #recursively check all the constraints starting from cell (x,y)
-    def make_consistent(self, grid, x, y):
+    def make_consistent(self, x, y):
+        n_modified = 0
         #check row and column
         for (m,n) in product(range(self.size),[y]):
-            pass
+            cell = self.grid[m][n]
+            #print("checking: " + str(m) + ',' + str(n) + ": " + str(cell))
+            if len(cell) == 1 and (cell[0] in self.grid[x][y]):
+                print(cell)
+                self.grid[x][y].remove(cell[0])
+                #n_modified += self.make_consistent(m,n) + 1
+                #print("modified: " + str(x) + ',' + str(y) + " - removed:" + str(cell[0]))
+
+        print('('+str(x)+','+str(y)+') ' + "final domain after row check: " + str(self.grid[x][y]))
 
         for (m,n) in product([x], range(self.size)):
             pass
@@ -43,6 +52,7 @@ class Sudoku():
         yStart = (y//self.subSidelength)*self.subSidelength
         for (m,n) in product(range(xStart, xStart+self.subSidelength), range(yStart, yStart+self.subSidelength)):
             pass
+        return n_modified
 
     def show(self):
         pass
@@ -60,6 +70,8 @@ def main():
     sudoku = Sudoku(args.Input)
 
     #main arc consisitency checking loop
+    
+    sudoku.make_consistent(0,2)
 
 
 
