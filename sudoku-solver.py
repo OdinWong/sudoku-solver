@@ -14,7 +14,7 @@ class Sudoku():
         #put input arguments into grid to initialize starting values,
         #only takes size^2 values from the inital state list provided
         #TODO check size/initialState is a valid size
-        for ((y,x),n) in zip(product(range(self.size), repeat=2), range(self.size**2)):
+        for ((x,y),n) in zip(product(range(self.size), repeat=2), range(self.size**2)):
             if initialState[n] != 0:
                 self.grid[x][y] = [initialState[n]]
             #print('('+str(x)+','+str(y)+') :' + str(self.grid[x][y]))
@@ -25,25 +25,49 @@ class Sudoku():
         
 
     def solve(self):
-        pass
+    
+        for (y,x) in product(range(self.size), repeat=2):
+            self.make_consistent(x,y)
 
-    #recursively check all the constraints starting from cell (x,y)
+
+    #as for local consistency, only cells with a single possible value affect others, only propagate from these
+    #checks and recursively propagates those that are restricted to a single value in the same way
     def make_consistent(self, x, y):
         n_modified = 0
+        if len(self.grid[x][y]) != 1:
+            return 0
+
         #check row and column
         for (m,n) in product(range(self.size),[y]):
-            cell = self.grid[m][n]
-            #print("checking: " + str(m) + ',' + str(n) + ": " + str(cell))
-            if len(cell) == 1 and (cell[0] in self.grid[x][y]):
-                print(cell)
-                self.grid[x][y].remove(cell[0])
-                #n_modified += self.make_consistent(m,n) + 1
-                #print("modified: " + str(x) + ',' + str(y) + " - removed:" + str(cell[0]))
 
-        print('('+str(x)+','+str(y)+') ' + "final domain after row check: " + str(self.grid[x][y]))
+            #skip self-check
+            if x==m and y == n:
+                continue
+
+            cell = self.grid[m][n]
+            locked_value = self.grid[x][y][0]
+            #print("checking: " + str(m) + ',' + str(n) + ": " + str(cell))
+            if (locked_value in cell):
+                cell.remove(locked_value)
+                n_modified += self.make_consistent(m,n) + 1
+                #print("modified: " + str(m) + ',' + str(n) + " - removed:" + str(locked_value))
+
+        #print("number of row cells modified: " + str(n_modified))
 
         for (m,n) in product([x], range(self.size)):
-            pass
+            #skip self-check
+            if x==m and y == n:
+                continue
+
+            cell = self.grid[m][n]
+            locked_value = self.grid[x][y][0]
+            #print("checking: " + str(m) + ',' + str(n) + ": " + str(cell))
+            if (locked_value in cell):
+                cell.remove(locked_value)
+                n_modified += self.make_consistent(m,n) + 1
+                #print("modified: " + str(m) + ',' + str(n) + " - removed:" + str(locked_value))
+        #print("number of column cells modified: " + str(n_modified))
+
 
         #check square
         ##first calculate the starting index of the subsquare that (x,y) is in
@@ -51,11 +75,24 @@ class Sudoku():
         xStart = (x//self.subSidelength)*self.subSidelength
         yStart = (y//self.subSidelength)*self.subSidelength
         for (m,n) in product(range(xStart, xStart+self.subSidelength), range(yStart, yStart+self.subSidelength)):
-            pass
+             #skip self-check
+            if x==m and y == n:
+                continue
+
+            cell = self.grid[m][n]
+            locked_value = self.grid[x][y][0]
+            #print("checking: " + str(m) + ',' + str(n) + ": " + str(cell))
+            if (locked_value in cell):
+                cell.remove(locked_value)
+                n_modified += self.make_consistent(m,n) + 1
+
         return n_modified
 
     def show(self):
-        pass
+        for column in self.grid:
+            for cell in column:
+                print(cell, end=' ')
+            print('')
 
 def main():
 
@@ -71,7 +108,8 @@ def main():
 
     #main arc consisitency checking loop
     
-    sudoku.make_consistent(0,2)
+    sudoku.solve()
+    sudoku.show()
 
 
 
