@@ -11,13 +11,16 @@ class Sudoku():
         self.size = 9
         self.grid = [[[n for n in range(1,10)] for x in range(self.size)] for u in range(self.size)]
 
+        #second grid to allow locking of values
+        self.locked = [([False]*self.size) for u in range(self.size)]
+
         #put input arguments into grid to initialize starting values,
         #only takes size^2 values from the inital state list provided
         #TODO check size/initialState is a valid size
         for ((x,y),n) in zip(product(range(self.size), repeat=2), range(self.size**2)):
             if initialState[n] != 0:
                 self.grid[x][y] = [initialState[n]]
-            #print('('+str(x)+','+str(y)+') :' + str(self.grid[x][y]))
+                self.locked[x][y] = True
 
         #each square contains 'size' number of cells, 
         # there are 'size' number of squares in the whole puzzle
@@ -28,10 +31,14 @@ class Sudoku():
     #run arc consistency algorithm, and if not solved try values with backtracking
     def solve(self):
     
-        self.make_consistent()
         solved = True
+
+        #main arc consistency checking loop
+        for (x,y) in product(range(self.size), repeat=2):
+            self.make_consistent(x,y)
         
 
+        return solved
         #find cell with least possible values
         min_len = self.size + 1
         min_index = ()
@@ -58,32 +65,73 @@ class Sudoku():
 
         return solved
 
+    #make consistent, with recursive checks 
+    #returns false if invalid state reached
+    def make_consistent(self,x,y):
+        if self.locked[x][y]:
+            return True
 
-    #makes all arcs locally consistent
-    def make_consistent(self):
-        for (x,y) in product(range(self.size), repeat=2):
-            self.make_locally_consistent(x,y)
+        recheck = False
+        possible_values = self.check_possible(x,y)
+
+        #no possible values remaining = invalid state, abort and return false
+        if possible_values == []:
+            return False
+
+        #if changing values, need to recheck
+        if set(self.grid[x][y]) != set(possible_values):
+            self.grid[x][y] = possible_values
+            recheck = True
+
+        #check if any values are unique in the row, col or subsquare
+        unique_values = self.check_unique(x,y)
+        
+        if len(unique_values) > 1:
+            #more than one unique value in this cell = invalid state, abort and return false
+            return False
+        elif len(unique_values) == 1:
+            #a value is unique, must be placed here, then need to recheck
+            self.grid[x][y] = unique_values
+            recheck = True
+
+        if recheck:
+            #if changes made to this cell, recheck relevant other cells in row, column and subsquare
+            #sets used to reduce redundant rechecks
+            row = {r for r in product(range(self.size), [y])}
+            row.remove((x,y))
+            col = {r for r in product([x], range(self.size))}
+            col.remove((x,y))
+
+            xStart = (x//self.subSidelength)*self.subSidelength
+            yStart = (y//self.subSidelength)*self.subSidelength
+            square = {r for r in product(range(xStart, xStart+self.subSidelength), range(yStart, yStart+self.subSidelength))}
+            square.remove((x,y))
+
+            for (m,n) in (row | col | square):
+                valid = self.make_consistent(m,n)
+                if not valid:
+                    return False
+
+        return True
 
 
-    #make the arcs from a cell (x,y) locally consistent, by removing values from the relevant cells
-    #called recursively on any cells that are restricted to only a single value
-    def make_locally_consistent(self, x, y):
-        n_modified = 0
-        if len(self.grid[x][y]) != 1:
-            return 0
+    def check_possible(self,x,y):
+        possible = [n for n in range(1,10)]
 
         #check row and column
         for (m,n) in product(range(self.size),[y]):
             #skip self-check
             if x==m and y == n:
-                continue
-            self.__check_local_arc__(x,y,m,n)
-
+                continue    
+            if len(self.grid[m][n]) == 1 and (self.grid[m][n][0] in possible):
+                possible.remove(self.grid[m][n][0])
+            
         for (m,n) in product([x], range(self.size)):
             #skip self-check
             if x==m and y == n:
                 continue
-            self.__check_local_arc__(x,y,m,n)
+            if len(self.grid[m][n]) == 1 and (self.grid[m][n][0] in possible):
+                possible.remove(self.grid[m][n][0])   
 
         #check square
         ##first calculate the starting index of the subsquare that (x,y) is in
@@ -94,21 +142,67 @@ class Sudoku():
              #skip self-check
             if x==m and y == n:
                 continue
-            self.__check_local_arc__(x,y,m,n)
-
-
-    #helper for checking one arc
-    def __check_local_arc__(self, x,y,m,n):
-        cell = self.grid[m][n]
-
-        if len(self.grid[x][y]) == 0:
-            return False
-
-        locked_value = self.grid[x][y][0]
-        if (locked_value in cell):
-            cell.remove(locked_value)
-            self.make_locally_consistent(m,n)
+            if len(self.grid[m][n]) == 1 and (self.grid[m][n][0] in possible):
+                possible.remove(self.grid[m][n][0])
         
+        return possible
+
+    def check_unique(self,x,y):
+        unique = set()
+        found = False
+
+        #check to see if any value in the cell is unique in the row, col or subsquare
+        for val in self.grid[x][y]:
+            found = False
+
+            #check row
+            for (m,n) in product(range(self.size),[y]):
+                #skip self-check
+                if x==m and y == n:
+                    continue
+                if val in self.grid[m][n]:
+                    #found the value -> not unique in row
+                    found = True
+                    break
+            
+            if not found:
+                unique.add(val)
+            found = False
+
+            #check column
+            for (m,n) in product([x], range(self.size)):
+                #skip self-check
+                if x==m and y == n:
+                    continue
+                if val in self.grid[m][n]:
+                    #found the value -> not unique in col
+                    found = True
+                    break 
+
+            if not found:
+                unique.add(val)
+            found = False
+
+            #check square
+            ##first calculate the starting index of the subsquare that (x,y) is in
+            ##and then iterate over the whole square
+            xStart = (x//self.subSidelength)*self.subSidelength
+            yStart = (y//self.subSidelength)*self.subSidelength
+            for (m,n) in product(range(xStart, xStart+self.subSidelength), range(yStart, yStart+self.subSidelength)):
+                #skip self-check
+                if x==m and y == n:
+                    continue
+                if val in self.grid[m][n]:
+                    #found the value -> not unique in subsquare
+                    found = True
+                    break
+            
+            if not found:
+                unique.add(val)
+            found = False
+            
+            return list(unique)
+
 
     def show(self):
         for column in self.grid:
@@ -131,12 +225,7 @@ def main():
 
     sudoku = Sudoku(args.Input)
 
-    #main arc consisitency checking loop
-    sudoku.show()
-    print('-------------------------')
-    sudoku.make_consistent()
-    sudoku.show()
-    print('-------------------------')
+
     sudoku.solve()
     sudoku.show()
 
