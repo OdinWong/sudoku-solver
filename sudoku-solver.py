@@ -24,50 +24,66 @@ class Sudoku():
         self.subSidelength = math.isqrt(self.size)
         
 
+    #solve the sudoku,
+    #run arc consistency algorithm, and if not solved try values with backtracking
     def solve(self):
     
-        for (y,x) in product(range(self.size), repeat=2):
-            self.make_consistent(x,y)
+        self.make_consistent()
+        solved = True
+        
+
+        #find cell with least possible values
+        min_len = self.size + 1
+        min_index = ()
+        for (x,y) in product(range(self.size), repeat=2):
+            if len(self.grid[x][y]) > 1:
+                #found unsolved cell
+                solved = False
+                #look for cell with minimum remaining values
+                if len(self.grid[x][y]) <= min_len:
+                    min_len = len(self.grid[x][y])
+                    min_index = (x,y)
+        
+        return solved
+        if not solved:
+            cell = self.grid[min_index[0]][min_index[1]].copy()
+            for val in cell:
+                #try value
+                self.grid[min_index[0]][min_index[1]] = [val]
+                solved = self.solve()
+                if solved:
+                    return True
+                #reset
+            self.grid[min_index[0]][min_index[1]] = cell.copy()
+
+        return solved
 
 
-    #as for local consistency, only cells with a single possible value affect others, only propagate from these
-    #checks and recursively propagates those that are restricted to a single value in the same way
-    def make_consistent(self, x, y):
+    #makes all arcs locally consistent
+    def make_consistent(self):
+        for (x,y) in product(range(self.size), repeat=2):
+            self.make_locally_consistent(x,y)
+
+
+    #make the arcs from a cell (x,y) locally consistent, by removing values from the relevant cells
+    #called recursively on any cells that are restricted to only a single value
+    def make_locally_consistent(self, x, y):
         n_modified = 0
         if len(self.grid[x][y]) != 1:
             return 0
 
         #check row and column
         for (m,n) in product(range(self.size),[y]):
-
             #skip self-check
             if x==m and y == n:
                 continue
-
-            cell = self.grid[m][n]
-            locked_value = self.grid[x][y][0]
-            #print("checking: " + str(m) + ',' + str(n) + ": " + str(cell))
-            if (locked_value in cell):
-                cell.remove(locked_value)
-                n_modified += self.make_consistent(m,n) + 1
-                #print("modified: " + str(m) + ',' + str(n) + " - removed:" + str(locked_value))
-
-        #print("number of row cells modified: " + str(n_modified))
+            self.__check_local_arc__(x,y,m,n)
 
         for (m,n) in product([x], range(self.size)):
             #skip self-check
             if x==m and y == n:
                 continue
-
-            cell = self.grid[m][n]
-            locked_value = self.grid[x][y][0]
-            #print("checking: " + str(m) + ',' + str(n) + ": " + str(cell))
-            if (locked_value in cell):
-                cell.remove(locked_value)
-                n_modified += self.make_consistent(m,n) + 1
-                #print("modified: " + str(m) + ',' + str(n) + " - removed:" + str(locked_value))
-        #print("number of column cells modified: " + str(n_modified))
-
+            self.__check_local_arc__(x,y,m,n)
 
         #check square
         ##first calculate the starting index of the subsquare that (x,y) is in
@@ -78,20 +94,29 @@ class Sudoku():
              #skip self-check
             if x==m and y == n:
                 continue
+            self.__check_local_arc__(x,y,m,n)
 
-            cell = self.grid[m][n]
-            locked_value = self.grid[x][y][0]
-            #print("checking: " + str(m) + ',' + str(n) + ": " + str(cell))
-            if (locked_value in cell):
-                cell.remove(locked_value)
-                n_modified += self.make_consistent(m,n) + 1
 
-        return n_modified
+    #helper for checking one arc
+    def __check_local_arc__(self, x,y,m,n):
+        cell = self.grid[m][n]
+
+        if len(self.grid[x][y]) == 0:
+            return False
+
+        locked_value = self.grid[x][y][0]
+        if (locked_value in cell):
+            cell.remove(locked_value)
+            self.make_locally_consistent(m,n)
+        
 
     def show(self):
         for column in self.grid:
             for cell in column:
-                print(cell, end=' ')
+                if len(cell) == 1:
+                    print(cell, end=' ')
+                else:
+                    print('[ ]', end=' ')
             print('')
 
 def main():
@@ -107,7 +132,11 @@ def main():
     sudoku = Sudoku(args.Input)
 
     #main arc consisitency checking loop
-    
+    sudoku.show()
+    print('-------------------------')
+    sudoku.make_consistent()
+    sudoku.show()
+    print('-------------------------')
     sudoku.solve()
     sudoku.show()
 
