@@ -3,7 +3,6 @@ import math
 from itertools import product
 
 
-
 class Sudoku():
     
     def __init__(self, initialState):
@@ -29,10 +28,13 @@ class Sudoku():
     def solve(self):
     
         self.make_consistent()
-        solved = True
+        self.backtracking()
         
 
-        #find cell with least possible values
+    def backtracking(self):
+        solved = True
+        
+        #find cell with least possible values > 1
         min_len = self.size + 1
         min_index = ()
         for (x,y) in product(range(self.size), repeat=2):
@@ -44,20 +46,48 @@ class Sudoku():
                     min_len = len(self.grid[x][y])
                     min_index = (x,y)
         
-        return solved
         if not solved:
             cell = self.grid[min_index[0]][min_index[1]].copy()
             for val in cell:
                 #try value
-                self.grid[min_index[0]][min_index[1]] = [val]
-                solved = self.solve()
-                if solved:
-                    return True
-                #reset
-            self.grid[min_index[0]][min_index[1]] = cell.copy()
-
+                if self.__check_valid__(min_index[0], min_index[1], val):
+                    self.grid[min_index[0]][min_index[1]] = [val]
+                    solved = self.backtracking()
+                    if solved:
+                        return True
+                    #reset
+                    self.grid[min_index[0]][min_index[1]] = cell.copy()
         return solved
 
+    def __check_valid__(self, x, y, val):
+
+        #check row and column
+        for (m,n) in product(range(self.size),[y]):
+            #skip self-check
+            if x==m and y == n:
+                continue
+            if len(self.grid[m][n]) == 1 and val == self.grid[m][n][0]:
+                return False
+
+        for (m,n) in product([x], range(self.size)):
+            #skip self-check
+            if x==m and y == n:
+                continue
+            if len(self.grid[m][n]) == 1 and val == self.grid[m][n][0]:
+                return False
+
+        #check square
+        ##first calculate the starting index of the subsquare that (x,y) is in
+        ##and then iterate over the whole square
+        xStart = (x//self.subSidelength)*self.subSidelength
+        yStart = (y//self.subSidelength)*self.subSidelength
+        for (m,n) in product(range(xStart, xStart+self.subSidelength), range(yStart, yStart+self.subSidelength)):
+             #skip self-check
+            if x==m and y == n:
+                continue
+            if len(self.grid[m][n]) == 1 and val == self.grid[m][n][0]:
+                return False
+        return True
 
     #makes all arcs locally consistent
     def make_consistent(self):
