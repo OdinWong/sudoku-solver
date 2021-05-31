@@ -34,46 +34,38 @@ class Sudoku():
     def backtracking(self):
         solved = True
         
-        #find cell with least possible values > 1
-        min_len = self.size + 1
-        min_index = ()
         for (x,y) in product(range(self.size), repeat=2):
             if len(self.grid[x][y]) > 1:
-                #found unsolved cell
                 solved = False
-                #look for cell with minimum remaining values
-                if len(self.grid[x][y]) <= min_len:
-                    min_len = len(self.grid[x][y])
-                    min_index = (x,y)
-        
-        if not solved:
-            cell = self.grid[min_index[0]][min_index[1]].copy()
-            for val in cell:
-                #try value
-                if self.__check_valid__(min_index[0], min_index[1], val):
-                    self.grid[min_index[0]][min_index[1]] = [val]
-                    solved = self.backtracking()
-                    if solved:
-                        return True
-                    #reset
-                    self.grid[min_index[0]][min_index[1]] = cell.copy()
+                cell = self.grid[x][y].copy()
+                for val in cell:
+                    #try value
+                    if self.__check_valid__(x, y, val):
+                        self.grid[x][y] = [val]
+                        solved = self.backtracking()
+                        if solved:
+                            return True
+                        #reset
+                        self.grid[x][y] = cell.copy()
+                return solved
         return solved
+
 
     def __check_valid__(self, x, y, val):
 
         #check row and column
-        for (m,n) in product(range(self.size),[y]):
+        for n in range(self.size):
             #skip self-check
-            if x==m and y == n:
+            if y == n:
                 continue
-            if len(self.grid[m][n]) == 1 and val == self.grid[m][n][0]:
+            if len(self.grid[x][n]) == 1 and val == self.grid[x][n][0]:
                 return False
 
-        for (m,n) in product([x], range(self.size)):
+        for n in range(self.size):
             #skip self-check
-            if x==m and y == n:
+            if x==n:
                 continue
-            if len(self.grid[m][n]) == 1 and val == self.grid[m][n][0]:
+            if len(self.grid[n][y]) == 1 and val == self.grid[n][y][0]:
                 return False
 
         #check square
