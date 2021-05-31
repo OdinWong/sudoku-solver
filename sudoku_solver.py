@@ -24,7 +24,7 @@ class Sudoku():
         
 
     #solve the sudoku,
-    #run arc consistency algorithm, and if not solved try values with backtracking
+    #run arc consistency algorithm, and if not solved try remaining values with backtracking
     def solve(self):
     
         self.make_consistent()
