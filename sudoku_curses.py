@@ -1,22 +1,52 @@
 import curses
+import curses.ascii
 from sudoku_solver import Sudoku
 
 def main(scr):
     scr = curses.initscr()
     scr.clear()
 
-    sudoku_box = scr.derwin(17,17, 1, 1)
+    sudoku_box = scr.derwin(13,13, 1, 1)
     sudoku_box.box()
 
-    for x in range(1,16):
-        for y in range(1,16):
-            if y%4==0 and x%4==0:
-                sudoku_box.addch(y,x,ord('+'))
-            elif y%4 == 0:
-                sudoku_box.addch(y,x,ord('-'))
-            elif x%4 == 0:
-                sudoku_box.addch(y,x,ord('|'))
+    sudoku = Sudoku()
 
+    #setup grid in the sudoku window
+    for x in range(1,12):
+        for y in range(1,12):
+            if y%4==0 and x%4==0:
+                sudoku_box.addch(y,x,ord('+'), curses.A_BOLD)
+            elif y%4 == 0:
+                sudoku_box.addch(y,x,ord('-'), curses.A_BOLD)
+            elif x%4 == 0:
+                sudoku_box.addch(y,x,ord('|'), curses.A_BOLD)
+
+    #setup menu
+    sby,sbx = sudoku_box.getmaxyx()
+    
+    scr.addstr(sby+1, 1, "'q' - quit")
+    scr.addstr(sby+3, 1, "edit")
+    scr.addstr(sby+4, 1, "solve")
+
+    #main control loop
+    key = None
+    while True:
+        key = scr.getch()
+
+        #control menu
+        
+        menuindex = 0
+        if key == ord('e'):
+            edit_mode(sudoku_box, sudoku)
+        elif key == ord("q"):
+            quit()
+        elif key == curses.KEY_UP:
+            pass
+        elif key == curses.KEY_DOWN:
+            pass
+
+
+def edit_mode(sudoku_box, sudoku):
     sudoku_box.move(1,1)
     sudoku_box.keypad(1)
 
@@ -51,6 +81,12 @@ def main(scr):
                 cy += 1
         elif key == ord('q'):
             quit()
+        elif curses.ascii.isdigit(key) and key != ord('0'):
+            sudoku_box.addch(key)
+            sudoku.edit_cell(cx,cy, int(key))
+        elif key == curses.KEY_BACKSPACE or key == ord('0'):
+            sudoku_box.addch(' ')
+            sudoku.edit_cell(cx,cy, 0)
 
         sudoku_box.move(cy,cx)
 

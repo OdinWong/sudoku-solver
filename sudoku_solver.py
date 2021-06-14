@@ -18,15 +18,32 @@ class Sudoku():
                 self.grid[x][y] = [initialState[n]]
             #print('('+str(x)+','+str(y)+') :' + str(self.grid[x][y]))
 
-        #each square contains 'size' number of cells, 
+        #each square contains 'size' number of cells,
         # there are 'size' number of squares in the whole puzzle
         self.subSidelength = math.isqrt(self.size)
+
+    def __init__(self):
+        self.size = 9
+        self.grid = [[[n for n in range(1,10)] for x in range(self.size)] for u in range(self.size)]
+
+    #edit/input a number into a cell without any other checks, 0 resets the cell
+    def edit_cell(self,x ,y ,num ):
+        if isinstance(num, str):
+            num = int(num) 
         
+        if  num == 0:
+            #reset square
+            self.grid[x][y] = [n for n in range(1,10)]
+        elif num > 0 and num <=9:
+            self.grid[x][y] = [num]
+
+    def get_cell(self ,x, y):
+        return self.grid[x][y].copy()
+
 
     #solve the sudoku,
     #run arc consistency algorithm, and if not solved try remaining values with backtracking
     def solve(self):
-    
         self.make_consistent()
         self.backtracking()
         
